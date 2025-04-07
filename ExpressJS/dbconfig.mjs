@@ -26,7 +26,7 @@ const db = mysql.createPool({
 // Test the connection
 db.getConnection((err, connection) => {
   if (err) {
-    console.error("Error connecting to the database:", err);
+    console.error("Error connecting to the database//:", err);
   } else {
     console.log("Database connected successfully.");
     connection.release();
@@ -49,8 +49,22 @@ app.get("/get/roles/:id", (req, res) => {   //get data from  roles
   });
 });
 
+app.get("/getAllRoles", (req, res) => {
+  const sqlQuery = `select * from roles`;
+  db.query(sqlQuery, (err, results) => {
+    if (err) {
+      console.error("Error fetching roles:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+    res.json(results);
+  });
+})
 app.post("/user/add", (req, res) => {   // adding the user and login details
   const { username, department, mail, password_user, role_type } = req.body;
+  if (!username || !department || !mail) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+  console.log(username, department, mail, password_user, role_type);
 
   const id = uuidv4();
 
@@ -67,7 +81,7 @@ app.post("/user/add", (req, res) => {   // adding the user and login details
 
     db.query(
       loginDetails,
-      [mail, password_user, role_type.toString(), id],
+      [mail, password_user, role_type, id],
       (err, result) => {
         if (err) {
           console.error("Error fetching users:", err);
@@ -127,7 +141,42 @@ app.post("/books/details", (req, res) => {    //books details adding
 });
 
 app.get("/getAllBooks", (req, res) => {      // getting all books
-  const sqlQuery = `select * from bookmain`;
+  const sqlQuery = `
+  SELECT 
+    bookmain.id, 
+    bookmain.book_name, 
+    books.book_type, 
+    bookmain.created_at, 
+    bookmain.Author,
+
+    (
+      SELECT status_type 
+      FROM book_status 
+      WHERE book_id = bookmain.id 
+      ORDER BY id DESC 
+      LIMIT 1
+    ) as status_type,
+
+    (
+      CASE 
+        WHEN (
+          SELECT status_type 
+          FROM book_status 
+          WHERE book_id = bookmain.id 
+          ORDER BY id DESC 
+          LIMIT 1
+        ) IN (1, 2) THEN 0
+        ELSE 1
+      END
+    ) as isAvailable
+
+  FROM 
+    bookmain
+  LEFT JOIN 
+    books ON bookmain.book_type = books.id
+  ORDER BY 
+    bookmain.created_at ASC
+`;
   db.query(sqlQuery, (err, results) => {
     if (err) {
       console.error("Error fetching roles:", err);
@@ -149,6 +198,7 @@ app.post("/status", (req, res) => { //adding the type of status
   })
 });
 
+
 app.post("/books/status", (req, res) => {  // getting all details of books
   const { bookname, status_type, borrowdate, duedate, user_id, book_id } = req.body;
 
@@ -159,8 +209,37 @@ app.post("/books/status", (req, res) => {  // getting all details of books
       console.error("SQL Error in /books/status:", err);
       return res.status(500).json({ error: err.message });
     }
-    res.json(result);
+    res.json({ msg: "submitted", result });
   })
+});
+
+app.get('/borrowHistory/:userId', (req, res) => {
+  const userId = req.params.userId;
+  console.log(userId);
+
+  const query = `
+  SELECT 
+    book_status.id,
+    bookmain.book_name,
+    book_status.borrowdate,
+    book_status.duedate,
+    status.status_type AS status_name,
+    status.id as status_id
+  FROM book_status
+  JOIN bookmain ON book_status.book_id = bookmain.id
+  JOIN status ON book_status.status_type = status.id
+  WHERE book_status.user_id = ?
+  ORDER BY book_status.borrowdate DESC
+`;
+
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error("Error fetching history:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+    res.json(results);
+  });
 });
 
 
@@ -182,6 +261,25 @@ app.post("/login", (req, res) => {      // login api
     res.json({ message: "Login successful", user: results[0] });
   });
 });
+app.put('/submitBook/:id', (req, res) => {
+  const bookId = req.params.id;
+
+  const updateQuery = `
+    UPDATE book_status 
+    SET status_type = 3 
+    WHERE id = ?
+  `;
+
+  db.query(updateQuery, [bookId], (err, result) => {
+    if (err) {
+      console.error('Error updating book status:', err);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+
+    res.json({ message: 'Book submitted successfully' });
+  });
+});
+
 
 const PORT = 5000;
 app.listen(PORT, () => {
