@@ -28,17 +28,52 @@ const Addbook = () => {
   }
 
   return (
-    <div>
-      <Header />
-      <h2>Add New Book</h2>
-      <input type='text' name="title" placeholder="Title" value={addbook.book_name} onChange={(e) => setAddBook({ ...addbook, book_name: e.target.value })} />
-      <input type='number' name="bookType" placeholder="bookType" value={addbook.book_type} onChange={(e) => setAddBook({ ...addbook, book_type: e.target.value })} />
-      <input name="author" placeholder="Author" onChange={(e) => setAddBook({ ...addbook, Author: e.target.value })} />
+    <div className="container mt-4">
+  <Header />
+  <h2 className="mb-4">Add New Book</h2>
 
-      <button type="button" class="btn btn-secondary mt-2 ms-4" onClick={() => handleAddBook()}>Submit</button>
+  <div className="mb-3">
+    <input
+      type="text"
+      name="title"
+      className="form-control"
+      placeholder="Title"
+      value={addbook.book_name}
+      onChange={(e) => setAddBook({ ...addbook, book_name: e.target.value })}
+    />
+  </div>
 
+  <div className="mb-3">
+    <input
+      type="number"
+      name="bookType"
+      className="form-control"
+      placeholder="Book Type"
+      value={addbook.book_type}
+      onChange={(e) => setAddBook({ ...addbook, book_type: e.target.value })}
+    />
+  </div>
 
-    </div>
+  <div className="mb-4">
+    <input
+      type="text"
+      name="author"
+      className="form-control"
+      placeholder="Author"
+      value={addbook.Author}
+      onChange={(e) => setAddBook({ ...addbook, Author: e.target.value })}
+    />
+  </div>
+
+  <button
+    type="button"
+    className="btn btn-primary"
+    onClick={handleAddBook}
+  >
+    Submit
+  </button>
+</div>
+
   )
 }
 

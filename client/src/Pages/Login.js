@@ -13,8 +13,8 @@ function Login() {
     const handleCheckLogin = () => {
         axios.post("http://localhost:5000/login", data)
             .then(res => {
-                const { user_id, role_type } = res.data;
-                console.log(res);
+                // console.log(res.data.user);
+                const { user_id, role_type } = res.data.user;
                 if (res.data.message === "Login successful") {
                     console.log('Login successfully');
                     localStorage.setItem("role",role_type);
