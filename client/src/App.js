@@ -12,11 +12,13 @@ import Borrow from './Pages/Borrow';
 import Track from './Pages/Track';
 
 
+
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
         <Routes>
+        <Route path="/" element={<Login />}></Route>
           <Route path="/login" element={<Login />}></Route>
           <Route path="/staff" element={<Staff />}></Route>
           <Route path="/book" element={<Book />}></Route>

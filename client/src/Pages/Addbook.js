@@ -33,34 +33,23 @@ const Addbook = () => {
   <h2 className="mb-4">Add New Book</h2>
 
   <div className="mb-3">
-    <input
-      type="text"
-      name="title"
-      className="form-control"
-      placeholder="Title"
-      value={addbook.book_name}
+    <input  type="text" name="title"className="form-control"
+      placeholder="Title" value={addbook.book_name}
       onChange={(e) => setAddBook({ ...addbook, book_name: e.target.value })}
     />
   </div>
 
   <div className="mb-3">
     <input
-      type="number"
-      name="bookType"
-      className="form-control"
-      placeholder="Book Type"
-      value={addbook.book_type}
+      type="number" name="bookType" className="form-control"
+      placeholder="Book Type"value={addbook.book_type}
       onChange={(e) => setAddBook({ ...addbook, book_type: e.target.value })}
     />
   </div>
 
   <div className="mb-4">
-    <input
-      type="text"
-      name="author"
-      className="form-control"
-      placeholder="Author"
-      value={addbook.Author}
+    <input type="text"name="author" className="form-control"
+      placeholder="Author"value={addbook.Author}
       onChange={(e) => setAddBook({ ...addbook, Author: e.target.value })}
     />
   </div>

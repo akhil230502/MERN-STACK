@@ -54,50 +54,31 @@ const Adduser = () => {
   <h3 className="mb-4">Add User</h3>
 
   <div className="mb-3">
-    <input
-      type="text"
-      className="form-control"
-      placeholder="Enter username"
-      value={adduser.username}
-      onChange={(e) => setAddUser({ ...adduser, username: e.target.value })}
+    <input type="text" className="form-control"placeholder="Enter username"
+      value={adduser.username} onChange={(e) => setAddUser({ ...adduser, username: e.target.value })}
     />
   </div>
 
   <div className="mb-3">
-    <input
-      type="text"
-      className="form-control"
-      placeholder="Enter department"
-      value={adduser.department}
-      onChange={(e) => setAddUser({ ...adduser, department: e.target.value })}
+    <input type="text"className="form-control"placeholder="Enter department"
+      value={adduser.department} onChange={(e) => setAddUser({ ...adduser, department: e.target.value })}
     />
   </div>
 
   <div className="mb-3">
-    <input
-      type="email"
-      className="form-control"
-      placeholder="Enter mail"
-      value={adduser.mail}
-      onChange={(e) => setAddUser({ ...adduser, mail: e.target.value })}
+    <input type="email" className="form-control" placeholder="Enter mail"
+      value={adduser.mail} onChange={(e) => setAddUser({ ...adduser, mail: e.target.value })}
     />
   </div>
 
   <div className="mb-3">
-    <input
-      type="password"
-      className="form-control"
-      placeholder="Enter password"
-      value={adduser.password_user}
-      onChange={(e) => setAddUser({ ...adduser, password_user: e.target.value })}
+    <input type="password" className="form-control" placeholder="Enter password"
+      value={adduser.password_user} onChange={(e) => setAddUser({ ...adduser, password_user: e.target.value })}
     />
   </div>
 
   <div className="mb-4">
-    <select
-      className="form-select"
-      value={adduser.role_type}
-      onChange={(e) => setAddUser({ ...adduser, role_type: e.target.value })}
+    <select className="form-select" value={adduser.role_type} onChange={(e) => setAddUser({ ...adduser, role_type: e.target.value })}
     >
       <option value="">Select Role</option>
       {roles.map((role) => (
