@@ -5,11 +5,13 @@ import { v4 as uuidv4 } from "uuid";
 import cors from "cors";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
 app.use(express.json());
 
+app.use(cookieParser());
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true
@@ -284,32 +286,49 @@ app.post("/login", (req, res) => {
 
     const user = results[0];
 
-    // Compare the password entered with the hashed password in DB
-    // bcrypt.compare(password_user, user.password_user, (err, isMatch) => {
-    //   if (err) {
-    //     console.error("Error comparing passwords:", err);
-    //     return res.status(500).json({ error: "Internal Server Error" });
-    //   }
-
-    //   if (!isMatch) {
-    //     console.log("isMatch",isMatch);
-
-    //     return res.status(401).json({ error: "Invalid email or password" });
-    //   }
-
-    //   res.json({ message: "Login successful", user });
-
     bcrypt.compare(password_user, user.password_user, (err, isMatch) => {
       if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
   
       const payload = { user_id: user.user_id, role_type: user.role_type };
-      const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1hr' });
+
+
+      res.cookie("auth",token ,{
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        sameSite: "Strict",
+        maxAge: 3600000, })
   
       res.json({ message: "Login successful", token, user });
     });
   });
 
+  app.get("/verify-token", (req, res) => {
+    const token = req.cookies?.auth;
+  
+    if (!token) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+  
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ error: "Invalid or expired token" });
+      }
+  
+      // Token is valid, send response
+      res.json({ message: "Token is valid", user: decoded });
+    });
+  });
 
+  app.get("/logout", (req, res) => {
+    res.clearCookie("auth", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+  
+    res.json({ message: "Logged out successfully" });
+  });
   
 const PORT = 5000;
 app.listen(PORT, () => {
