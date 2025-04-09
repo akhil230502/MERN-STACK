@@ -3,9 +3,13 @@ import dotenv from "dotenv";
 import express from "express";
 import { v4 as uuidv4 } from "uuid";
 import cors from "cors";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const app = express();
+
 app.use(express.json());
+
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true
@@ -23,6 +27,14 @@ const db = mysql.createPool({
   queueLimit: 0,
 });
 
+// app.get('/', (req, res) => {
+//   res.send('Server is running');
+// });
+
+app.listen(5000, () => {
+  console.log(`Server started on http://localhost:5000`);
+});
+
 // Test the connection
 db.getConnection((err, connection) => {
   if (err) {
@@ -38,7 +50,7 @@ app.get("/get/roles/:id", (req, res) => {   //get data from  roles
   const { id } = req.params;
   console.log(id);
 
-  const sqlQuery = `SELECT * FROM roles where id=${id}`;
+  const sqlQuery =` SELECT * FROM roles where id=${id}`;
 
   db.query(sqlQuery, (err, results) => {
     if (err) {
@@ -50,7 +62,7 @@ app.get("/get/roles/:id", (req, res) => {   //get data from  roles
 });
 
 app.get("/getAllRoles", (req, res) => {
-  const sqlQuery = `select * from roles`;
+  const sqlQuery =` select * from roles`;
   db.query(sqlQuery, (err, results) => {
     if (err) {
       console.error("Error fetching roles:", err);
@@ -59,39 +71,45 @@ app.get("/getAllRoles", (req, res) => {
     res.json(results);
   });
 })
-app.post("/user/add", (req, res) => {   // adding the user and login details
+
+app.post("/user/add", (req, res) => {
   const { username, department, mail, password_user, role_type } = req.body;
-  if (!username || !department || !mail) {
+
+  if (!username || !department || !mail || !password_user || !role_type) {
     return res.status(400).json({ error: "All fields are required" });
   }
-  console.log(username, department, mail, password_user, role_type);
 
   const id = uuidv4();
+  const saltRounds = 10;
 
-  console.log(id);
-
-  const sqlQuery = `INSERT INTO users(username,department,mail,identity)values(?,?,?,?)`;
-
-  db.query(sqlQuery, [username, department, mail, id], (err, result) => {
+  //  Hash the password using bcrypt
+  bcrypt.hash(password_user, saltRounds, (err, hashedPassword) => {
     if (err) {
-      console.error("Error fetching users:", err);
-      return res.status(500).json({ error: "Internal Server Error" });
+      console.error("Error hashing password:", err);
+      return res.status(500).json({ error: "Password encryption failed" });
     }
-    const loginDetails = `INSERT INTO logindetails(mail,password_user,role_type,user_id)values(?,?,?,?)`;
 
-    db.query(
-      loginDetails,
-      [mail, password_user, role_type, id],
-      (err, result) => {
+    // Insert into users table
+    const sqlQuery = `INSERT INTO users(username, department, mail, identity) VALUES (?, ?, ?, ?)`;
+    db.query(sqlQuery, [username, department, mail, id], (err, result) => {
+      if (err) {
+        console.error("Error inserting into users:", err);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+
+      // Insert into logindetails table with hashed password
+      const loginQuery =` INSERT INTO logindetails(mail, password_user, role_type, user_id) VALUES (?, ?, ?, ?)`;
+      db.query(loginQuery, [mail, hashedPassword, role_type, id], (err, result) => {
         if (err) {
-          console.error("Error fetching users:", err);
+          console.error("Error inserting into logindetails:", err);
           return res.status(500).json({ error: "Internal Server Error" });
         }
-        res.json(result);
-      }
-    );
+
+        res.json({ message: "User added successfully" });
+      });
+    });
   });
-});
+});  
 
 app.get("/getAllUser", (req, res) => { //getting all users
   const sqlQuery = `select * from users`;
@@ -106,7 +124,7 @@ app.get("/getAllUser", (req, res) => { //getting all users
 
 app.post("/books", (req, res) => { //adding the type of book
   const { book_type } = req.body;
-  const sqlQuery = `INSERT INTO books(book_type)values(?)`;
+  const sqlQuery =` INSERT INTO books(book_type)values(?)`;
   db.query(sqlQuery, [book_type], (err, result) => {
     if (err) {
       console.error("Error fetching users:", err);
@@ -117,7 +135,7 @@ app.post("/books", (req, res) => { //adding the type of book
 });
 
 app.get("/getAllBookType", (req, res) => { //getting all type of books
-  const sqlQuery = `select * from books`;
+  const sqlQuery =` select * from books`;
   db.query(sqlQuery, (err, results) => {
     if (err) {
       console.error("Error fetching roles:", err);
@@ -141,8 +159,8 @@ app.post("/books/details", (req, res) => {    //books details adding
 });
 
 app.get("/getAllBooks", (req, res) => {      // getting all books
-  const sqlQuery = `
-  SELECT 
+  const sqlQuery = 
+  `SELECT 
     bookmain.id, 
     bookmain.book_name, 
     books.book_type, 
@@ -175,8 +193,8 @@ app.get("/getAllBooks", (req, res) => {      // getting all books
   LEFT JOIN 
     books ON bookmain.book_type = books.id
   ORDER BY 
-    bookmain.created_at ASC
-`;
+    bookmain.created_at ASC`
+;
   db.query(sqlQuery, (err, results) => {
     if (err) {
       console.error("Error fetching roles:", err);
@@ -229,8 +247,8 @@ app.get('/borrowHistory/:userId', (req, res) => {
   JOIN bookmain ON book_status.book_id = bookmain.id
   JOIN status ON book_status.status_type = status.id
   WHERE book_status.user_id = ?
-  ORDER BY book_status.borrowdate DESC
-`;
+  ORDER BY book_status.borrowdate DESC`
+;
 
 
   db.query(query, [userId], (err, results) => {
@@ -243,45 +261,58 @@ app.get('/borrowHistory/:userId', (req, res) => {
 });
 
 
-app.post("/login", (req, res) => {      // login api
+app.post("/login", (req, res) => {
   const { mail, password_user } = req.body;
 
-  const sqlQuery = `SELECT * FROM logindetails WHERE mail = ? AND password_user = ?`;
+  if (!mail || !password_user) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
 
-  db.query(sqlQuery, [mail, password_user], (err, results) => {
+  const sqlQuery = `SELECT * FROM logindetails WHERE mail = ?`;
+
+  db.query(sqlQuery, [mail], (err, results) => {
     if (err) {
       console.error("Error during login:", err);
       return res.status(500).json({ error: "Internal Server Error" });
     }
 
     if (results.length === 0) {
+      console.log(err);
+      
       return res.status(401).json({ error: "Invalid email or password" });
     }
-    // Login successful
-    res.json({ message: "Login successful", user: results[0] });
+
+    const user = results[0];
+
+    // Compare the password entered with the hashed password in DB
+    // bcrypt.compare(password_user, user.password_user, (err, isMatch) => {
+    //   if (err) {
+    //     console.error("Error comparing passwords:", err);
+    //     return res.status(500).json({ error: "Internal Server Error" });
+    //   }
+
+    //   if (!isMatch) {
+    //     console.log("isMatch",isMatch);
+
+    //     return res.status(401).json({ error: "Invalid email or password" });
+    //   }
+
+    //   res.json({ message: "Login successful", user });
+
+    bcrypt.compare(password_user, user.password_user, (err, isMatch) => {
+      if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
+  
+      const payload = { user_id: user.user_id, role_type: user.role_type };
+      const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+  
+      res.json({ message: "Login successful", token, user });
+    });
   });
-});
-app.put('/submitBook/:id', (req, res) => {
-  const bookId = req.params.id;
-
-  const updateQuery = `
-    UPDATE book_status 
-    SET status_type = 3 
-    WHERE id = ?
-  `;
-
-  db.query(updateQuery, [bookId], (err, result) => {
-    if (err) {
-      console.error('Error updating book status:', err);
-      return res.status(500).json({ error: 'Internal Server Error' });
-    }
-
-    res.json({ message: 'Book submitted successfully' });
-  });
-});
 
 
+  
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(` Server running at http://localhost:${PORT}`);
+})
 });
