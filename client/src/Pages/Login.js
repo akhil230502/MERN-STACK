@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState } from "react";
+import {  useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
@@ -11,18 +11,23 @@ function Login() {
     const navigate = useNavigate();
 
     const handleCheckLogin = () => {
-       
-    axios.post("http://localhost:5000/login", data)
-  .then(res => {
-    const { token, user } = res.data;
 
-    localStorage.setItem("token", token); 
-    localStorage.setItem("role", user.role_type);
-    localStorage.setItem("userId", user.user_id);
+        axios.defaults.withCredentials = true;
 
-    navigate('/staff');
-  });
+        axios.post("http://localhost:5000/login", data)
+
+            .then(res => {
+                const { token, user } = res.data;
+
+                // localStorage.setItem("token", token); 
+                localStorage.setItem("role", user.role_type);
+                localStorage.setItem("userId", user.user_id);
+
+                navigate('/staff');
+            });
     };
+
+  
 
     return (
         <div className="container">
@@ -60,5 +65,4 @@ function Login() {
         </div>
     );
 }
-
 export default Login;
